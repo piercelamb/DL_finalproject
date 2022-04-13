@@ -1,0 +1,19 @@
+name: m1-math
+channels:
+  - defaults
+  - pytorch
+  - conda-forge
+  - huggingface
+dependencies:
+  - python=3.9
+  - openblas
+  - numpy
+  - pandas
+  - matplotlib
+  - pyyaml
+  - pytorch
+  - torchvision
+  - opencv
+  - datasets
+  - transformers
+  - tqdm
