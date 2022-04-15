@@ -1,5 +1,6 @@
-# data
-/data/*/
+# data /models
+/data/*
+/models/*
 
 .DS_STORE
 .idea
