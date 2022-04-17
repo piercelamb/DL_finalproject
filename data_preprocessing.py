@@ -3,6 +3,8 @@ import pandas as pd
 import re
 from datasets import Dataset, Features
 
+from sklearn.model_selection import train_test_split
+
 DEEPMIND_MATH_PATH = './data/mathematics_dataset-v1.0'
 SAVED_DATA_PATH = './data/'
 
@@ -56,3 +58,8 @@ def reduce_dataset():
 
 def get_encoded_data(data):
     pass
+
+
+def split_data(data_set):
+    X_train, X_test, y_train, y_test = train_test_split(data_set.Question, data_set.Answer, test_size=0.33, random_state=42)
+    return X_train, X_test, y_train, y_test
