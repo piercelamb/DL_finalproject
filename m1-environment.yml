@@ -12,6 +12,7 @@ dependencies:
   - matplotlib
   - pyyaml
   - pytorch
+  - scikit-learn
   - torchvision
   - opencv
   - datasets
