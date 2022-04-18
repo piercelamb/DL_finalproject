@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 import re
-from datasets import Dataset, Features
 import subprocess
 
 from sklearn.model_selection import train_test_split
@@ -45,9 +44,9 @@ def reduce_dataset():
                                 break
                         if has_removed_number:
                             count_removed += 1
-                            eliminated_data.append([question, answer]) # save the eliminated data
+                            eliminated_data.append([question_raw, answer_raw]) # save the eliminated data
                         else:
-                            interim_data.append([question, answer]) # Save the "training" data
+                            interim_data.append([question_raw, answer_raw]) # Save the "training" data
 
     print("Writing dataset to CSV")
     retained_data = pd.DataFrame(interim_data, columns=['Question', 'Answer'])
@@ -62,7 +61,7 @@ def get_encoded_data(raw_data_filename):
     print("Encoding the dataset")
     preprocess_data = subprocess.run([
         "fairseq-preprocess",
-        "--trainpref=data/"+raw_data_filename,
+        "--trainpref=data/raw_dataset.csv",
         "--destdir=data/encoded_dataset.csv"
         "--tokenizer=moses",
         "--bpe=fastbpe"
