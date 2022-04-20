@@ -66,7 +66,8 @@ def reduce_dataset():
     print("Total removed instances: " + str(count_removed))
     return SAVED_DATA_PATH+RAW_DATASET_NAME, retained_data
 
-# https://fairseq.readthedocs.io/en/latest/command_line_tools.html#fairseq-preprocess
+# https://github.com/pytorch/fairseq/blob/main/examples/roberta/multiprocessing_bpe_encoder.py
+# code below is based on the bpe encoder provided in the link above
 def get_encoded_data(data_splits):
     has_splits = True
     for name, split_path in data_splits.items():
@@ -195,7 +196,7 @@ class MultiprocessingEncoder(object):
         return ["PASS", dec_lines]
 
 # Either loads existing train/valid/test data from disk or creates a
-# 60/20/20 split and saves into numpy files
+# 60/20/20 split and saves into csv files
 def split_data(data_set):
     split_paths = {
         'train': SAVED_DATA_PATH + 'raw_train.csv',
