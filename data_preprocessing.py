@@ -69,13 +69,13 @@ def reduce_dataset():
 # https://github.com/pytorch/fairseq/blob/main/examples/roberta/multiprocessing_bpe_encoder.py
 # code below is based on the bpe encoder provided in the link above
 def get_encoded_data(data_splits):
-    has_splits = True
+    has_encoded_splits = True
     for name, split_path in data_splits.items():
         if not os.path.isfile(split_path):
-            has_splits = False
+            has_encoded_splits = False
             break
 
-    if not has_splits:
+    if not has_encoded_splits:
         for name, split_path in data_splits.items():
             print("\n===Encoding the "+name+" dataset===\n")
             """
