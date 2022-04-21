@@ -15,13 +15,14 @@ from fairseq.data.encoders.gpt2_bpe import get_encoder
 DEEPMIND_MATH_PATH = './data/mathematics_dataset-v1.0'
 SAVED_DATA_PATH = './data/'
 RAW_DATASET_NAME = 'raw_dataset.csv'
+DATA_BIN_DIR = './data_bin'
 RANDOM_STATE = 1337
 
 # Detects whether the reduced dataset exists locally and returns it, or
 # creates it from the Deepmind Mathematics dataset
 def reduce_dataset():
     if os.path.isfile(SAVED_DATA_PATH+RAW_DATASET_NAME):
-        print("Detected filtered data locally, returning")
+        print("Detected filtered data locally")
         retained_data = pd.read_csv(SAVED_DATA_PATH+RAW_DATASET_NAME, dtype={"Question": "string", "Answer": "string"})
         return SAVED_DATA_PATH+RAW_DATASET_NAME, retained_data
 
@@ -154,8 +155,7 @@ def get_encoded_data(data_splits):
     else:
         print("Detected encoded datasets locally")
 
-    return {'train': SAVED_DATA_PATH + 'train.bpe', 'validate': SAVED_DATA_PATH + 'validate.bpe',
-            'test': SAVED_DATA_PATH + 'test.bpe'}
+    return SAVED_DATA_PATH + 'train.bpe', SAVED_DATA_PATH + 'validate.bpe', SAVED_DATA_PATH + 'test.bpe'
 
 
 class MultiprocessingEncoder(object):
@@ -228,5 +228,29 @@ def split_data(data_set):
         test_df.to_csv(SAVED_DATA_PATH + 'raw_test.csv', header=None, index=None, sep="=")
 
     else:
-        print("Data splits detected locally, returning local file paths")
+        print("Detected data splits locally")
     return split_paths['train'], split_paths['validate'], split_paths['test']
+
+def preprocess_data(train_path, validate_path, test_path):
+    num_files = 0
+    for root, dirs, files in os.walk(DATA_BIN_DIR, topdown=False):
+        for file in files:
+            if file.startswith(('train', 'valid', 'test')) and \
+                file.endswith(('.bin', '.idx')):
+                num_files += 1
+
+    if num_files == 6:
+        print("Detected preprocessed data files locally")
+        return
+    else:
+        print("No preprocessed data files found, preprocessing")
+        preprocessing = subprocess.run([
+            "fairseq-preprocess",
+            "--cpu",
+            "--trainpref="+train_path,
+            "--validpref="+validate_path,
+            "--testpref="+test_path,
+            "--destdir="+DATA_BIN_DIR,
+            "--workers="+str(20)
+        ])
+        print("The exit code was: %d" % preprocessing.returncode)

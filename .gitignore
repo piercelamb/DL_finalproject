@@ -1,6 +1,7 @@
 # data /models
 /data/*
 /models/*
+/data_bin/*
 
 .DS_STORE
 .idea
