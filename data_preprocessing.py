@@ -70,8 +70,13 @@ def reduce_dataset():
 # https://github.com/pytorch/fairseq/blob/main/examples/roberta/multiprocessing_bpe_encoder.py
 # code below is based on the bpe encoder provided in the link above
 def get_encoded_data(data_splits):
+    bpe_paths = {
+        'train': SAVED_DATA_PATH + 'raw_train.bpe',
+        'validate': SAVED_DATA_PATH + 'raw_validate.bpe',
+        'test': SAVED_DATA_PATH + 'raw_test.bpe',
+    }
     has_encoded_splits = True
-    for name, split_path in data_splits.items():
+    for name, split_path in bpe_paths.items():
         if not os.path.isfile(split_path):
             has_encoded_splits = False
             break
@@ -218,13 +223,19 @@ def split_data(data_set):
             [int(.6*len(data_set)), int(.8*len(data_set))]
         )
         print("Saving train csv")
-        train_df = pd.DataFrame(train).drop(columns=['Unnamed: 0'])
+        train_df = pd.DataFrame(train)
+        if "Unnamed: 0" in train_df.columns:
+            train_df = train_df.drop(columns=['Unnamed: 0'])
         train_df.to_csv(SAVED_DATA_PATH +'raw_train.csv', header=None, index=None, sep="=")
         print("Saving validate csv")
-        validate_df = pd.DataFrame(validate).drop(columns=['Unnamed: 0'])
+        validate_df = pd.DataFrame(validate)
+        if "Unnamed: 0" in validate_df.columns:
+            validate_df = validate_df.drop(columns=['Unnamed: 0'])
         validate_df.to_csv(SAVED_DATA_PATH + 'raw_validate.csv', header=None, index=None, sep="=")
         print("Saving test csv")
-        test_df = pd.DataFrame(test).drop(columns=['Unnamed: 0'])
+        test_df = pd.DataFrame(test)
+        if "Unnamed: 0" in test_df.columns:
+            test_df = test_df.drop(columns=['Unnamed: 0'])
         test_df.to_csv(SAVED_DATA_PATH + 'raw_test.csv', header=None, index=None, sep="=")
 
     else:
