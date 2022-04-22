@@ -71,9 +71,9 @@ def reduce_dataset():
 # code below is based on the bpe encoder provided in the link above
 def get_encoded_data(data_splits):
     bpe_paths = {
-        'train': SAVED_DATA_PATH + 'raw_train.bpe',
-        'validate': SAVED_DATA_PATH + 'raw_validate.bpe',
-        'test': SAVED_DATA_PATH + 'raw_test.bpe',
+        'train': SAVED_DATA_PATH + 'train.bpe',
+        'validate': SAVED_DATA_PATH + 'validate.bpe',
+        'test': SAVED_DATA_PATH + 'test.bpe',
     }
     has_encoded_splits = True
     for name, split_path in bpe_paths.items():

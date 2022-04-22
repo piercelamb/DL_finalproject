@@ -9,6 +9,7 @@
     - https://dl.fbaipublicfiles.com/fairseq/gpt2_bpe/vocab.bpe
 - Download an extract at least one fairseq moe_lm model to the /models folder. For e.g. [this one](https://dl.fbaipublicfiles.com/fairseq/models/lm/en_dense_lm_125m.tar.gz)
   - File path should look like `'/models/en_dense_lm_125m/model.pt'`
+- Both `fairseq-preprocess` and `fairseq-train` are being passed `--cpu`. Delete this if you're running on GPU
 - If you've run it at all unsuccessfully before, make sure to delete files it produces as it checks for their existence before creating them.
 
 ## Notes
@@ -22,3 +23,4 @@
     etc
     ```
   - And I do not know why the `None-None` was included. In order to get fairseq-train to run, I had to manually delete the `None-None`'s 
+  - I deleted and re-ran encoding and None-None's were not produced
