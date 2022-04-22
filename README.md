@@ -32,6 +32,19 @@
 
 ### Config for em_dense_lm_125m (printed):
 
+- I was getting errors between the passed `--arch` and the loaded `--finetune-from-model` checkpoint.
+- I printed the `--finetune-from-model` checkpoint's config (left commented code on how to do that) and found that it presents the `--arch` that was used to train it
+- Fixing this (passing the same `--arch`) reduced the number of errors I got substantially
+- I pasted the entire config below
+- Still getting two errors that are most likely related to not passing some arguments to `fairseq-train` that were passed when the `--finetune-from-model` model was trained via the config below
+- I was going to start mining the below config and adding stuff from it to our call to `fairseq-train` to see if it would fix the two errors
+- The errors are:
+  - ```
+       RuntimeError: Error(s) in loading state_dict for TransformerLanguageModel:
+       size mismatch for decoder.embed_tokens.weight: copying a param with shape torch.Size([51200, 1024]) from checkpoint, the shape in current model is torch.Size([1200, 1024]).
+       size mismatch for decoder.output_projection.weight: copying a param with shape torch.Size([51200, 1024]) from checkpoint, the shape in current model is torch.Size([1200, 1024]).
+    ```
+- My instinct is that some of the settings under the `model` key might fix these
 ```yaml
 common:
   _name: null

@@ -8,7 +8,6 @@ import json
 
 FAIRSEQ_MODEL_PATH = './models'
 CHECKPOINT_DIR = './checkpoint'
-ARCH = 'transformer_lm_gpt'
 
 if __name__ == '__main__':
     batch_size = 16
@@ -27,8 +26,10 @@ if __name__ == '__main__':
     model_list = get_model_list(FAIRSEQ_MODEL_PATH)
     for model_path in model_list:
         print("Training fairseq on: "+model_path)
+        checkpoint = torch.load(model_path)
+        arch_used_by_model = checkpoint['cfg']['model']['_name']
+        print("Architecture used by model checkpoint: "+arch_used_by_model)
         # TODO Commented code below will print the model config
-        # checkpoint = torch.load(model_path)
         # print(checkpoint['cfg'].pretty())
         # exit(1)
         # TODO NOTE THIS IS SETUP TO RUN ON CPU
@@ -37,7 +38,7 @@ if __name__ == '__main__':
             "fairseq-train",
             DATA_BIN_DIR,
             "--cpu",
-            "--arch="+ARCH,
+            "--arch="+arch_used_by_model,
             "--finetune-from-model="+model_path,
             "--task=language_modeling",
             "--batch-size="+str(batch_size),
