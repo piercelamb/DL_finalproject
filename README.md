@@ -2,7 +2,7 @@
 
 ```
 # Create necessary directories
-mkdir data, data_bin, models, checkpoint
+mkdir data data_bin models checkpoint
 
 # Download the DM Math dataset
 gsutil cp gs://mathematics-dataset/mathematics_dataset-v1.0.tar.gz -I ./data
