@@ -4,10 +4,11 @@ from data_preprocessing import reduce_dataset, split_data, get_encoded_data, pre
 from models import get_model_list
 import torch
 import subprocess
+import json
 
 FAIRSEQ_MODEL_PATH = './models'
 CHECKPOINT_DIR = './checkpoint'
-ARCH = 'transformer_lm_gpt2_medium'
+ARCH = 'transformer_lm_gpt'
 
 if __name__ == '__main__':
     batch_size = 16
@@ -21,10 +22,15 @@ if __name__ == '__main__':
     # TODO Note below function set to run on --cpu
     preprocess_data(train_path, validate_path, test_path)
 
+
     # training
     model_list = get_model_list(FAIRSEQ_MODEL_PATH)
     for model_path in model_list:
         print("Training fairseq on: "+model_path)
+        # TODO Commented code below will print the model config
+        # checkpoint = torch.load(model_path)
+        # print(checkpoint['cfg'].pretty())
+        # exit(1)
         # TODO NOTE THIS IS SETUP TO RUN ON CPU
         # TODO REMOVE --cpu TO TRAIN ON CUDA
         training = subprocess.run([
