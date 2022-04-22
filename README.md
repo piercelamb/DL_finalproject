@@ -5,7 +5,7 @@
 mkdir data data_bin models checkpoint
 
 # Download the DM Math dataset
-gsutil cp gs://mathematics-dataset/mathematics_dataset-v1.0.tar.gz
+gsutil cp gs://mathematics-dataset/mathematics_dataset-v1.0.tar.gz ./data
 tar xvf data/mathematics_dataset-v1.0.tar.gz -C data
 
 # Download the tokenizer
