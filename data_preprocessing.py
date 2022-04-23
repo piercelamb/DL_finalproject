@@ -242,6 +242,9 @@ def split_data(data_set):
         print("Detected data splits locally")
     return split_paths['train'], split_paths['validate'], split_paths['test']
 
+
+# This function now gets the `dict.txt` that comes with a model download and passes it into
+# fairseq-preprocess so that decoder dimensions match up with the model we're finetuning from
 def preprocess_data(model_name, dict_path, train_path, validate_path, test_path):
     model_data = DATA_BIN_DIR+'/'+model_name
     if not os.path.isdir(model_data):

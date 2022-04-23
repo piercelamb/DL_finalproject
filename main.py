@@ -14,7 +14,7 @@ if __name__ == '__main__':
     learning_rate = 0.0003
     epochs = 5
 
-    # data preprocessing
+    # data encoding
     file_path, raw_data = reduce_dataset()
     raw_train_path, raw_validate_path, raw_test_path = split_data(raw_data)
     train_path, validate_path, test_path = get_encoded_data({'train':raw_train_path, 'validate':raw_validate_path, 'test':raw_test_path})
