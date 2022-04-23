@@ -30,21 +30,53 @@
   - And I do not know why the `None-None` was included. In order to get fairseq-train to run, I had to manually delete the `None-None`'s 
   - I deleted and re-ran encoding and None-None's were not produced
 
+### Where plamb is stuck:
+
+If you just run the code you should get this error:
+
+```shell
+Traceback (most recent call last):
+  File "/Users/plamb/miniconda3/envs/m1-math/bin/fairseq-train", line 8, in <module>
+    sys.exit(cli_main())
+  File "/Users/plamb/miniconda3/envs/m1-math/lib/python3.8/site-packages/fairseq_cli/train.py", line 557, in cli_main
+    distributed_utils.call_main(cfg, main)
+  File "/Users/plamb/miniconda3/envs/m1-math/lib/python3.8/site-packages/fairseq/distributed/utils.py", line 369, in call_main
+    main(cfg, **kwargs)
+  File "/Users/plamb/miniconda3/envs/m1-math/lib/python3.8/site-packages/fairseq_cli/train.py", line 164, in main
+    extra_state, epoch_itr = checkpoint_utils.load_checkpoint(
+  File "/Users/plamb/miniconda3/envs/m1-math/lib/python3.8/site-packages/fairseq/checkpoint_utils.py", line 248, in load_checkpoint
+    extra_state = trainer.load_checkpoint(
+  File "/Users/plamb/miniconda3/envs/m1-math/lib/python3.8/site-packages/fairseq/trainer.py", line 628, in load_checkpoint
+    and itr_state["iterations_in_epoch"] == 0
+KeyError: 'iterations_in_epoch'
+```
+I opened the file and just set `itr_state["iterations_in_epoch"] = 0`
+
+And training actually kicked off!
+
+So we need to figure out why this value isn't getting set
+
+
+
+### I believe i fixed the below problem (so this can be ignored):
+- I am currently getting the below errors when running `fairseq-train`
+- ```
+     RuntimeError: Error(s) in loading state_dict for TransformerLanguageModel:
+     size mismatch for decoder.embed_tokens.weight: copying a param with shape torch.Size([51200, 1024]) from checkpoint, the shape in current model is torch.Size([1200, 1024]).
+     size mismatch for decoder.output_projection.weight: copying a param with shape torch.Size([51200, 1024]) from checkpoint, the shape in current model is torch.Size([1200, 1024]).
+  ```
+- The reason this is occuring is because of the below comment:
+  - https://github.com/pytorch/fairseq/issues/367#issuecomment-439690689
+- As such, I re-wrote the code to grab `dict.txt` out of the `/model/name-here/` path and pass it to `preproces_data`
+- It then gets passed into `preprocess_data` via `--srcdict` and `--only-source` (note that source stands for source language, you can see more here [here](https://fairseq.readthedocs.io/en/latest/command_line_tools.html#fairseq-preprocess))
+- Unfortunately this did not solve the error, you can see it occur as preprocess runs:
+  - The logs output: ` INFO | fairseq_cli.preprocess | [None] Dictionary: 51200 types`
+  - The number of which matches my above error: `size mismatch copying torch.Size([51200, 1024]) to torch.Size([1200, 1024])`
+  - In essence, the fix is somehow using or passing a dictionary that forces the number of 'types' down to 1200
+  - I'm not sure what dict.txt even is in this context
+
 ### Config for em_dense_lm_125m (printed):
 
-- I was getting errors between the passed `--arch` and the loaded `--finetune-from-model` checkpoint.
-- I printed the `--finetune-from-model` checkpoint's config (left commented code on how to do that) and found that it presents the `--arch` that was used to train it
-- Fixing this (passing the same `--arch`) reduced the number of errors I got substantially
-- I pasted the entire config below
-- Still getting two errors that are most likely related to not passing some arguments to `fairseq-train` that were passed when the `--finetune-from-model` model was trained via the config below
-- I was going to start mining the below config and adding stuff from it to our call to `fairseq-train` to see if it would fix the two errors
-- The errors are:
-  - ```
-       RuntimeError: Error(s) in loading state_dict for TransformerLanguageModel:
-       size mismatch for decoder.embed_tokens.weight: copying a param with shape torch.Size([51200, 1024]) from checkpoint, the shape in current model is torch.Size([1200, 1024]).
-       size mismatch for decoder.output_projection.weight: copying a param with shape torch.Size([51200, 1024]) from checkpoint, the shape in current model is torch.Size([1200, 1024]).
-    ```
-- My instinct is that some of the settings under the `model` key might fix these
 ```yaml
 common:
   _name: null

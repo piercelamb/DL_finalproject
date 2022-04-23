@@ -242,9 +242,12 @@ def split_data(data_set):
         print("Detected data splits locally")
     return split_paths['train'], split_paths['validate'], split_paths['test']
 
-def preprocess_data(train_path, validate_path, test_path):
+def preprocess_data(model_name, dict_path, train_path, validate_path, test_path):
+    model_data = DATA_BIN_DIR+'/'+model_name
+    if not os.path.isdir(model_data):
+        os.mkdir(model_data)
     num_files = 0
-    for root, dirs, files in os.walk(DATA_BIN_DIR, topdown=False):
+    for root, dirs, files in os.walk(model_data, topdown=False):
         for file in files:
             if file.startswith(('train', 'valid', 'test')) and \
                 file.endswith(('.bin', '.idx')):
@@ -261,7 +264,9 @@ def preprocess_data(train_path, validate_path, test_path):
             "--trainpref="+train_path,
             "--validpref="+validate_path,
             "--testpref="+test_path,
-            "--destdir="+DATA_BIN_DIR,
+            "--destdir="+model_data,
+            "--srcdict="+dict_path,
+            "--only-source",
             "--workers="+str(20)
         ])
         print("The exit code was: %d" % preprocessing.returncode)
