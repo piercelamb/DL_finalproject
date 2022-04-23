@@ -28,19 +28,6 @@ tar xvf models/en_dense_lm_125m.tar.gz -C models
 - This link may be key: https://github.com/pytorch/fairseq/tree/moe#training-moe-language-models
 - The link was found in this readme: https://github.com/pytorch/fairseq/tree/main/examples/moe_lm#mixture-of-expert-models
 
-## Notes
-
-- When I ran preprocess_data(), it produced files in `/data_bin` that looked like:
-  - ```
-    train.None-None.bin
-    train.None-None.idx
-    valid.None-None.bin
-    valid.None-None.idx
-    etc
-    ```
-  - And I do not know why the `None-None` was included. In order to get fairseq-train to run, I had to manually delete the `None-None`'s 
-  - I deleted and re-ran encoding and None-None's were not produced
-
 ### Where plamb is stuck:
 
 If you just run the code you should get this error:
