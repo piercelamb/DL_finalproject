@@ -1,14 +1,25 @@
+## Set up instructions
+
+```
+# Create necessary directories
+mkdir data data_bin models checkpoint
+
+# Download the DM Math dataset
+gsutil cp gs://mathematics-dataset/mathematics_dataset-v1.0.tar.gz ./data
+tar xvf data/mathematics_dataset-v1.0.tar.gz -C data
+
+# Download the tokenizer
+wget https://dl.fbaipublicfiles.com/fairseq/gpt2_bpe/encoder.json -P data
+wget https://dl.fbaipublicfiles.com/fairseq/gpt2_bpe/vocab.bpe -P data
+
+# Download the 125M model
+wget https://dl.fbaipublicfiles.com/fairseq/models/lm/en_dense_lm_125m.tar.gz -P models
+tar xvf models/en_dense_lm_125m.tar.gz -C models
+
+```
+
 ## Run instructions:
 
-- Clone the repository.
-- In the root repository, if they aren't there, create a `/data` folder, `/data_bin` folder, `/checkpoint` folder and `/models` folder
-- In the `/data` folder you just created, download and unzip the [deepmind math dataset](https://console.cloud.google.com/storage/browser/_details/mathematics-dataset/mathematics_dataset-v1.0.tar.gz;tab=live_object)
-  - File path should look like `/data/mathematics_dataset-v1.0`
-- Download the `encoder.json` file and `vocab.bpe` required by the bpe encoder. Make sure they are in the `/data` folder:
-    - https://dl.fbaipublicfiles.com/fairseq/gpt2_bpe/encoder.json
-    - https://dl.fbaipublicfiles.com/fairseq/gpt2_bpe/vocab.bpe
-- Download an extract at least one fairseq moe_lm model to the /models folder. For e.g. [this one](https://dl.fbaipublicfiles.com/fairseq/models/lm/en_dense_lm_125m.tar.gz)
-  - File path should look like `'/models/en_dense_lm_125m/model.pt'`
 - Both `fairseq-preprocess` and `fairseq-train` are being passed `--cpu`. Delete this if you're running on GPU
 - If you've run it at all unsuccessfully before, make sure to delete files it produces as it checks for their existence before creating them.
 
