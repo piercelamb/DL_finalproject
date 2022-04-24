@@ -1,4 +1,16 @@
-## Set up instructions
+## Set up instructions for Mac M1 (for huggingface)
+
+First, install Rust:
+```shell
+brew install rustup
+rustup-init
+source ~/.cargo/env
+rustc --version
+```
+Then `conda env update -f m1-environment.yml`
+
+To test Stella's file: `python huggingface.py`
+## Set up instructions (for fairseq)
 
 ```
 # Create necessary directories
