@@ -9,22 +9,44 @@ import contextlib
 import sys
 from collections import Counter
 from multiprocessing import Pool
+import torch
 
 from fairseq.data.encoders.gpt2_bpe import get_encoder
 
 DEEPMIND_MATH_PATH = './data/mathematics_dataset-v1.0'
 SAVED_DATA_PATH = './data/'
 RAW_DATASET_NAME = 'raw_dataset.csv'
+ELIMINATED_DATASET_NAME = 'eliminated_data.csv'
 DATA_BIN_DIR = './data_bin'
+Train_csv = 'train_data.csv'
+Val_csv = 'val_data.csv'
 RANDOM_STATE = 1337
+
+
+class Dataset(torch.utils.data.Dataset):
+    def __init__(self, encodings, labels):
+        self.encodings = encodings
+        self.labels = labels
+
+    def __getitem__(self, idx):
+        item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+        item['labels'] = torch.tensor(self.labels[idx])
+        return item
+
+    def __len__(self):
+        return len(self.labels)
+
 
 # Detects whether the reduced dataset exists locally and returns it, or
 # creates it from the Deepmind Mathematics dataset
 def reduce_dataset():
-    if os.path.isfile(SAVED_DATA_PATH+RAW_DATASET_NAME):
+    if os.path.isfile(SAVED_DATA_PATH + RAW_DATASET_NAME):
         print("Detected filtered data locally")
-        retained_data = pd.read_csv(SAVED_DATA_PATH+RAW_DATASET_NAME, dtype={"Question": "string", "Answer": "string"})
-        return SAVED_DATA_PATH+RAW_DATASET_NAME, retained_data
+        retained_data = pd.read_csv(SAVED_DATA_PATH + RAW_DATASET_NAME,
+                                    dtype={"Question": "string", "Answer": "string"})
+        eliminated_data = pd.read_csv(SAVED_DATA_PATH + ELIMINATED_DATASET_NAME,
+                                      dtype={"Question": "string", "Answer": "string"})
+        return SAVED_DATA_PATH + RAW_DATASET_NAME, retained_data, eliminated_data
 
     removed_numbers_ints = [' 13 ', ' 31 ', ' 82 ', ' 99 ']
     removed_numbers = ["\D1[3]{1}\D", "\D3[1]{1}\D", "\D8[2]{1}\D", "\D9[9]{1}\D"]
@@ -50,22 +72,23 @@ def reduce_dataset():
                         for number in removed_numbers:
                             question = re.findall(number, question_raw)
                             answer = re.findall(number, answer_raw)
-                            if answer or question: # if regex found a match in the question or answer break and change x to True
+                            if answer or question:  # if regex found a match in the question or answer break and change x to True
                                 has_removed_number = True
                                 break
                         if has_removed_number:
                             count_removed += 1
-                            eliminated_data.append([question_raw, answer_raw]) # save the eliminated data
+                            eliminated_data.append([question_raw, answer_raw])  # save the eliminated data
                         else:
-                            interim_data.append([question_raw, answer_raw]) # Save the "training" data
+                            interim_data.append([question_raw, answer_raw])  # Save the "training" data
 
     print("Writing dataset to CSV")
-    retained_data = pd.DataFrame(interim_data, columns=['Question', 'Answer'])
-    eliminated_data = pd.DataFrame(eliminated_data, columns=['Question', 'Answer'])
-    retained_data.to_csv(SAVED_DATA_PATH+RAW_DATASET_NAME)
-    eliminated_data.to_csv(SAVED_DATA_PATH+'eliminated_data.csv')
+    retained_data = pd.DataFrame(interim_data, columns=['text', 'label'])
+    eliminated_data = pd.DataFrame(eliminated_data, columns=['text', 'label'])
+    retained_data.to_csv(SAVED_DATA_PATH + RAW_DATASET_NAME)
+    eliminated_data.to_csv(SAVED_DATA_PATH + ELIMINATED_DATASET_NAME)
     print("Total removed instances: " + str(count_removed))
-    return SAVED_DATA_PATH+RAW_DATASET_NAME, retained_data
+    return SAVED_DATA_PATH + RAW_DATASET_NAME, retained_data, eliminated_data
+
 
 # https://github.com/pytorch/fairseq/blob/main/examples/roberta/multiprocessing_bpe_encoder.py
 # code below is based on the bpe encoder provided in the link above
@@ -83,7 +106,7 @@ def get_encoded_data(data_splits):
 
     if not has_encoded_splits:
         for name, split_path in data_splits.items():
-            print("\n===Encoding the "+name+" dataset===\n")
+            print("\n===Encoding the " + name + " dataset===\n")
             """
                 Helper script to encode raw text with the GPT-2 BPE using multiple processes.
                 The encoder.json and vocab.bpe files can be obtained here:
@@ -94,7 +117,7 @@ def get_encoded_data(data_splits):
             parser.add_argument(
                 "--encoder-json",
                 help="path to encoder.json",
-                default=SAVED_DATA_PATH+'encoder.json'
+                default=SAVED_DATA_PATH + 'encoder.json'
             )
             parser.add_argument(
                 "--vocab-bpe",
@@ -200,60 +223,35 @@ class MultiprocessingEncoder(object):
             dec_lines.append(self.decode(tokens))
         return ["PASS", dec_lines]
 
+
 # Either loads existing train/valid/test data from disk or creates a
 # 60/20/20 split and saves into csv files
 def split_data(data_set):
-    split_paths = {
-        'train': SAVED_DATA_PATH + 'raw_train.csv',
-        'validate': SAVED_DATA_PATH + 'raw_validate.csv',
-        'test': SAVED_DATA_PATH + 'raw_test.csv',
-    }
-    has_splits = True
-    for name, path in split_paths.items():
-        if not os.path.isfile(path):
-            has_splits = False
-            break
+    train_text = data_set.label
+    train_label = data_set.text
+    train_texts, val_texts, train_labels, val_labels = train_test_split(train_text, train_label, test_size=.2)
+    frame1 = {'text': train_texts, 'label': train_labels}
+    frame2 = {'text': val_texts, 'label': val_labels}
 
-    if not has_splits:
-        print("Data splits not detected locally, splitting data")
-        # Splits the data into 60% train, 20% validate, 20% test
-        # From this answer: https://stackoverflow.com/questions/38250710/how-to-split-data-into-3-sets-train-validation-and-test/38251213#38251213
-        train, validate, test = np.split(
-            data_set.sample(frac=1, random_state=RANDOM_STATE),
-            [int(.6*len(data_set)), int(.8*len(data_set))]
-        )
-        print("Saving train csv")
-        train_df = pd.DataFrame(train)
-        if "Unnamed: 0" in train_df.columns:
-            train_df = train_df.drop(columns=['Unnamed: 0'])
-        train_df.to_csv(SAVED_DATA_PATH +'raw_train.csv', header=None, index=None, sep="=")
-        print("Saving validate csv")
-        validate_df = pd.DataFrame(validate)
-        if "Unnamed: 0" in validate_df.columns:
-            validate_df = validate_df.drop(columns=['Unnamed: 0'])
-        validate_df.to_csv(SAVED_DATA_PATH + 'raw_validate.csv', header=None, index=None, sep="=")
-        print("Saving test csv")
-        test_df = pd.DataFrame(test)
-        if "Unnamed: 0" in test_df.columns:
-            test_df = test_df.drop(columns=['Unnamed: 0'])
-        test_df.to_csv(SAVED_DATA_PATH + 'raw_test.csv', header=None, index=None, sep="=")
+    train_pd = pd.DataFrame(frame1)
+    test_pd = pd.DataFrame(frame2)
+    train_pd.to_csv(SAVED_DATA_PATH + Train_csv)
+    test_pd.to_csv(SAVED_DATA_PATH + Val_csv)
 
-    else:
-        print("Detected data splits locally")
-    return split_paths['train'], split_paths['validate'], split_paths['test']
+    return train_texts, val_texts, train_labels, val_labels
 
 
 # This function now gets the `dict.txt` that comes with a model download and passes it into
 # fairseq-preprocess so that decoder dimensions match up with the model we're finetuning from
 def preprocess_data(model_name, dict_path, train_path, validate_path, test_path):
-    model_data = DATA_BIN_DIR+'/'+model_name
+    model_data = DATA_BIN_DIR + '/' + model_name
     if not os.path.isdir(model_data):
         os.mkdir(model_data)
     num_files = 0
     for root, dirs, files in os.walk(model_data, topdown=False):
         for file in files:
             if file.startswith(('train', 'valid', 'test')) and \
-                file.endswith(('.bin', '.idx')):
+                    file.endswith(('.bin', '.idx')):
                 num_files += 1
 
     if num_files == 6:
@@ -264,12 +262,12 @@ def preprocess_data(model_name, dict_path, train_path, validate_path, test_path)
         preprocessing = subprocess.run([
             "fairseq-preprocess",
             "--cpu",
-            "--trainpref="+train_path,
-            "--validpref="+validate_path,
-            "--testpref="+test_path,
-            "--destdir="+model_data,
-            "--srcdict="+dict_path,
+            "--trainpref=" + train_path,
+            "--validpref=" + validate_path,
+            "--testpref=" + test_path,
+            "--destdir=" + model_data,
+            "--srcdict=" + dict_path,
             "--only-source",
-            "--workers="+str(20)
+            "--workers=" + str(20)
         ])
         print("The exit code was: %d" % preprocessing.returncode)
