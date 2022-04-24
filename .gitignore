@@ -5,4 +5,5 @@
 
 .DS_STORE
 .idea
+.ssh_creds.txt
 __pycache__/

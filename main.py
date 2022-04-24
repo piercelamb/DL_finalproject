@@ -10,9 +10,10 @@ FAIRSEQ_MODEL_PATH = './models'
 CHECKPOINT_DIR = './checkpoint'
 
 if __name__ == '__main__':
-    batch_size = 1
-    learning_rate = 0.0003
-    epochs = 5
+    batch_size = 4
+    learning_rate = 0.005
+    epochs = 0
+    max_update = 10 # stop training at specified update
 
     # data encoding
     file_path, raw_data = reduce_dataset()
@@ -52,19 +53,14 @@ if __name__ == '__main__':
                 "--task=language_modeling",
                 "--batch-size="+str(batch_size),
                 "--lr="+str(learning_rate),
+                "--stop-min-lr=-1.0",
                 "--max-epoch="+str(epochs),
                 "--save-dir="+CHECKPOINT_DIR,
-                "--optimizer="+optimizer_used_by_model # POSSIBLE en_dense_lm_125m configs from here down
-                # "--decoder-embed-dim=1024",
-                # "--decoder-output-dim=1024",
-                # "--decoder-input-dim=1024",
-                # "--decoder-ffn-embed-dim=4096",
-                # "--decoder-layers=24",
-                # "--decoder-attention-heads=16",
-                # "--decoder-normalize-before",
-                # "--share-decoder-input-output-embed",
-                # "--log-interval=25",
-                # "--log-format=json",
+                "--optimizer="+optimizer_used_by_model, # POSSIBLE en_dense_lm_125m configs from here down
+                "--required-batch-size-multiple=1",
+                "--log-interval=25",
+                "--log-format=json",
+                "--max-update="+str(max_update),
                 # "--fp16",
                 # "--fp16-no-flatten-grads",
                 # "--num-workers=2",
