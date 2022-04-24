@@ -30,6 +30,9 @@ class IMDbDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.labels)
 
+def preprocess_function(examples):
+    return tokenizer(examples["text"], truncation=True)
+
 if __name__ == '__main__':
     batch_size = 4
     learning_rate = 0.005
@@ -90,3 +93,34 @@ if __name__ == '__main__':
     )
 
     trainer.train()
+
+    '''
+    
+    imdb = dataset = load_dataset('csv', data_files={'train': [SAVED_DATA_PATH + Train_csv], 'test': SAVED_DATA_PATH + Val_csv})
+    tokenizer = AutoTokenizer.from_pretrained("gpt2")
+    tokenized_imdb = imdb.map(preprocess_function, batched=True)
+    data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+    model = AutoModelForCausalLM.from_pretrained("KoboldAI/fairseq-dense-125M")
+     
+     
+    training_args = TrainingArguments(
+        output_dir="./results",
+        learning_rate=2e-5,
+        per_device_train_batch_size=16,
+        per_device_eval_batch_size=16,
+        num_train_epochs=5,
+        weight_decay=0.01,
+    )
+    
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_imdb["train"],
+        eval_dataset=tokenized_imdb["test"],
+        tokenizer=tokenizer,
+        data_collator=data_collator,
+    )
+    
+    trainer.train()
+    
+    '''
