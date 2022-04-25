@@ -1,6 +1,6 @@
 import os
 
-from data_preprocessing import reduce_dataset, split_data, preprocess_data, DATA_BIN_DIR,Dataset
+from data_preprocessing import reduce_dataset, split_data, preprocess_data, DATA_BIN_DIR,Dataset, get_tokenized_data
 from transformers import AutoTokenizer, AutoModelForCausalLM, DataCollatorWithPadding, TrainingArguments, Trainer
 from datasets import Dataset,load_dataset
 from models import get_model_list
@@ -44,6 +44,8 @@ if __name__ == '__main__':
     # data encoding
     file_path, raw_data, eliminated_data = reduce_dataset()
     train_texts, val_texts, train_labels, val_labels = split_data(raw_data)
+
+    #get_tokenized_data(train_texts, val_texts, train_labels, val_labels)
 
     tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
