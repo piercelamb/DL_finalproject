@@ -1,8 +1,8 @@
 import os
 
-from data_preprocessing import reduce_dataset, split_data, preprocess_data, DATA_BIN_DIR,Dataset, get_tokenized_data
+from data_preprocessing import reduce_dataset, split_data, preprocess_data, DATA_BIN_DIR, Dataset, get_tokenized_data
 from transformers import AutoTokenizer, AutoModelForCausalLM, DataCollatorWithPadding, TrainingArguments, Trainer
-from datasets import Dataset,load_dataset
+from datasets import Dataset, load_dataset
 from models import get_model_list
 from torch.utils.data import DataLoader
 import torch
@@ -10,7 +10,6 @@ import pandas as pd
 
 FAIRSEQ_MODEL_PATH = './models'
 CHECKPOINT_DIR = './checkpoint'
-
 
 SAVED_DATA_PATH = './data/'
 Train_csv = 'train_data.csv'
@@ -24,20 +23,23 @@ class IMDbDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+        a = self.labels.itmes()
         item['label'] = torch.tensor(self.labels[idx])
         return item
 
     def __len__(self):
         return len(self.labels)
 
+
 def preprocess_function(examples):
     return tokenizer(examples["text"], truncation=True)
+
 
 if __name__ == '__main__':
     batch_size = 4
     learning_rate = 0.005
     epochs = 0
-    max_update = 10 # stop training at specified update
+    max_update = 10  # stop training at specified update
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -45,25 +47,53 @@ if __name__ == '__main__':
     file_path, raw_data, eliminated_data = reduce_dataset()
     train_texts, val_texts, train_labels, val_labels = split_data(raw_data)
 
-    #get_tokenized_data(train_texts, val_texts, train_labels, val_labels)
-
-    tokenizer = AutoTokenizer.from_pretrained("gpt2")
-
+    # get_tokenized_data(train_texts, val_texts, train_labels, val_labels)
     train_texts = train_texts.astype(str).values.tolist()
     val_texts = val_texts.astype(str).values.tolist()
+    train_labels = train_labels.astype(str).values.tolist()
+    val_labels = val_labels.astype(str).values.tolist()
     eliminated_data_text = eliminated_data['text'].astype(str).values.tolist()
     eliminated_data_label = eliminated_data['label'].astype(str).values.tolist()
 
+    training_data = []
+    validation_data = []
+    testing__data = []
+
+    size_training = len(train_texts)
+    for i in range(0, size_training):
+        string = 'Question: ' + train_texts[i] + ' Answer: ' + train_labels[i]
+        training_data.append(string)
+
+    size_validation = len(train_labels)
+    for i in range(0, size_validation):
+        string = 'Question: ' + val_texts[i] + ' Answer: ' + val_labels[i]
+        validation_data.append(string)
+
+    size_eliminated = len(eliminated_data_text)
+    for i in range(0, size_eliminated):
+        string = 'Question: ' + eliminated_data_text[i] + ' Answer: ' + eliminated_data_label[i]
+        testing__data.append(string)
+
+    tokenizer = AutoTokenizer.from_pretrained("gpt2")
+    if tokenizer.pad_token is None:
+        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+
+
+
     print("1")
-    train_encodings = tokenizer(train_texts, truncation=True)
+    train_encodings = tokenizer(training_data, max_length=50, padding='max_length', truncation=True,
+                                return_tensors='pt')
     print("2")
-    val_encodings = tokenizer(val_texts, truncation=True)
+    val_encodings = tokenizer(validation_data, max_length=50, padding='max_length', truncation=True, return_tensors='pt')
     print("3")
-    test_encodings = tokenizer(eliminated_data_text, truncation=True)
-    print("4")
-    train_dataset = IMDbDataset(train_encodings, train_labels)
-    val_dataset = IMDbDataset(val_encodings, val_labels)
-    test_dataset = IMDbDataset(test_encodings,eliminated_data_label )
+    val_label_encodings = tokenizer(testing__data, max_length=50, padding='max_length', truncation=True,
+                                    return_tensors='pt')
+
+    # TODO: Convert the encodings to a dataset....
+    '''
+    train_dataset = IMDbDataset(train_encodings, train_label_encoding)
+    val_dataset = IMDbDataset(val_encodings, val_label_encodings)
+    test_dataset = IMDbDataset(test_encodings, test_label_encoding)'''
 
     from torch.utils.data import DataLoader
     from transformers import DistilBertForSequenceClassification, AdamW
@@ -75,7 +105,6 @@ if __name__ == '__main__':
     model.train()
 
     train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
-
 
     training_args = TrainingArguments(
         output_dir='./results',  # output directory
