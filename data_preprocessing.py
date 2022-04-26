@@ -3,7 +3,7 @@ import pandas as pd
 import re
 import subprocess
 import numpy as np
-from datasets import Features, Value, ClassLabel
+from datasets import Features, Value, ClassLabel, Sequence
 import datasets
 from sklearn.model_selection import train_test_split
 import argparse
@@ -78,15 +78,16 @@ def reduce_dataset():
                             if answer or question:  # if regex found a match in the question or answer break and change x to True
                                 has_removed_number = True
                                 break
+                        instance = ['Question: '+question_raw, 'Answer: '+answer_raw]
                         if has_removed_number:
                             count_removed += 1
-                            eliminated_data.append([question_raw, answer_raw])  # save the eliminated data
+                            eliminated_data.append(instance)  # save the eliminated data
                         else:
-                            interim_data.append([question_raw, answer_raw])  # Save the "training" data
+                            interim_data.append(instance)  # Save the "training" data
 
     print("Writing dataset to CSV")
-    retained_data = pd.DataFrame(interim_data, columns=['text', 'label'])
-    eliminated_data = pd.DataFrame(eliminated_data, columns=['text', 'label'])
+    retained_data = pd.DataFrame(interim_data, columns=['Question', 'Answer'])
+    eliminated_data = pd.DataFrame(eliminated_data, columns=['Question', 'Answer'])
     retained_data.to_csv(SAVED_DATA_PATH + RAW_DATASET_NAME, index=None)
     eliminated_data.to_csv(SAVED_DATA_PATH + ELIMINATED_DATASET_NAME, index=None)
     print("Total removed instances: " + str(count_removed))
@@ -107,35 +108,35 @@ def split_data(data_set):
 
     if not has_splits:
         print("Splitting data to train and test sets")
-        train_text = data_set.text
-        train_label = data_set.label
+        train_text = data_set.Question
+        train_label = data_set.Answer
         train_texts, val_texts, train_labels, val_labels = train_test_split(train_text, train_label, test_size=.2)
-        frame1 = {'text': train_texts, 'label': train_labels}
-        frame2 = {'text': val_texts, 'label': val_labels}
-
+        frame1 = {'Question': train_texts, 'Answer': train_labels}
+        frame2 = {'Question': val_texts, 'Answer': val_labels}
         train_pd = pd.DataFrame(frame1)
         test_pd = pd.DataFrame(frame2)
         print("Writing the training set")
-        train_pd.to_csv(SAVED_DATA_PATH + TRAIN_CSV, index=None)
+        train_pd['combined'] = train_pd.apply(lambda x: ' '.join(x.astype(str).values), axis=1)
+        train_pd['combined'].to_csv(SAVED_DATA_PATH + TRAIN_CSV, index=None, header=None)
         print("Writing the validation set")
-        test_pd.to_csv(SAVED_DATA_PATH + VAL_CSV, index=None)
+        test_pd['combined'] = test_pd.apply(lambda x: ' '.join(x.astype(str).values), axis=1)
+        test_pd['combined'].to_csv(SAVED_DATA_PATH + VAL_CSV, index=None, header=None)
         print("Done writing data splits")
+        train_pd = train_pd['combined']
+        test_pd = test_pd['combined']
     else:
         print("Detected split data locally, loading and returning")
         train_pd = pd.read_csv(SAVED_DATA_PATH + TRAIN_CSV)
         test_pd = pd.read_csv(SAVED_DATA_PATH + VAL_CSV)
-        train_texts = train_pd.text
-        val_texts = test_pd.text
-        train_labels = train_pd.label
-        val_labels = test_pd.label
-    return train_texts, val_texts, train_labels, val_labels
+    return train_pd, test_pd
 
 def tokenize_data(row):
-    question = row['text']
-    answer = row['label']
-    token_question = TOKENIZER(question, truncation=True)
-    token_answer = TOKENIZER(answer, truncation=True)
-    return {'text': token_question, 'label': token_answer}
+    print(row)
+    row = row.replace('"','')
+    tokenized = TOKENIZER(row, truncation=True)
+    print(tokenized)
+    exit(1)
+    return tokenized
 
 def get_tokenized_data(train, validate):
     tokenized_datasets = {}
@@ -144,8 +145,8 @@ def get_tokenized_data(train, validate):
         curr_dataset = datasets.Dataset.from_pandas(raw_dataset)
 
         features = Features({
-            'text': Value(dtype='string', id=None),
-            'label': Value(dtype='string', id=None)
+            'input_ids': Sequence(feature=Value(dtype='int64')),
+            'attention_mask': Sequence(Value(dtype='int64')),
         })
 
         tokenized = curr_dataset.map(
@@ -153,6 +154,7 @@ def get_tokenized_data(train, validate):
             remove_columns=curr_dataset.column_names,
             features=features,
         )
+        print("Saving the "+name+" dataset to disk")
         tokenized.save_to_disk(SAVED_DATA_PATH)
 
         tokenized_datasets[name] = tokenized.set_format(type="torch")

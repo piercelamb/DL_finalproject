@@ -45,9 +45,10 @@ if __name__ == '__main__':
 
     # data encoding
     file_path, raw_data, eliminated_data = reduce_dataset()
-    train_texts, val_texts, train_labels, val_labels = split_data(raw_data)
+    train_df, val_df = split_data(raw_data)
 
-    # get_tokenized_data(train_texts, val_texts, train_labels, val_labels)
+    #train_tokenized, val_tokenized = get_tokenized_data(train_df, val_df)
+    #exit(1)
     train_texts = train_texts.astype(str).values.tolist()
     val_texts = val_texts.astype(str).values.tolist()
     train_labels = train_labels.astype(str).values.tolist()
