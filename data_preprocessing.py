@@ -3,7 +3,7 @@ import pandas as pd
 import re
 import subprocess
 import numpy as np
-from datasets import Features, Value, ClassLabel, Sequence
+from datasets import Features, Value, ClassLabel, Sequence, load_dataset, load_from_disk
 import datasets
 from sklearn.model_selection import train_test_split
 import argparse
@@ -117,10 +117,10 @@ def split_data(data_set):
         test_pd = pd.DataFrame(frame2)
         print("Writing the training set")
         train_pd['combined'] = train_pd.apply(lambda x: ' '.join(x.astype(str).values), axis=1)
-        train_pd['combined'].to_csv(SAVED_DATA_PATH + TRAIN_CSV, index=None, header=None)
+        train_pd['combined'].to_csv(SAVED_DATA_PATH + TRAIN_CSV, index=None)
         print("Writing the validation set")
         test_pd['combined'] = test_pd.apply(lambda x: ' '.join(x.astype(str).values), axis=1)
-        test_pd['combined'].to_csv(SAVED_DATA_PATH + VAL_CSV, index=None, header=None)
+        test_pd['combined'].to_csv(SAVED_DATA_PATH + VAL_CSV, index=None)
         print("Done writing data splits")
         train_pd = train_pd['combined']
         test_pd = test_pd['combined']
@@ -131,35 +131,59 @@ def split_data(data_set):
     return train_pd, test_pd
 
 def tokenize_data(row):
-    print(row)
-    row = row.replace('"','')
-    tokenized = TOKENIZER(row, truncation=True)
-    print(tokenized)
-    exit(1)
+    string = row['combined'].replace('"','')
+    tokenized = TOKENIZER(string, truncation=True)
     return tokenized
 
 def get_tokenized_data(train, validate):
-    tokenized_datasets = {}
-    for name, raw_dataset in {'train':train, 'valid':validate}.items():
-        print("Tokenizing the "+name+" dataset ")
-        curr_dataset = datasets.Dataset.from_pandas(raw_dataset)
+    dataset_paths = {}
+    has_dataset_files = False
+    for root, dirs, files in os.walk(SAVED_DATA_PATH, topdown=False):
+        if root.endswith('train'):
+            dataset_paths['train'] = root
+            if files:
+                has_dataset_files = True
+            else:
+                has_dataset_files = False
+        if root.endswith('valid'):
+            dataset_paths['valid'] = root
+            if files:
+                has_dataset_files = True
+            else:
+                has_dataset_files = False
 
-        features = Features({
-            'input_ids': Sequence(feature=Value(dtype='int64')),
-            'attention_mask': Sequence(Value(dtype='int64')),
-        })
 
-        tokenized = curr_dataset.map(
-            tokenize_data,
-            remove_columns=curr_dataset.column_names,
-            features=features,
-        )
-        print("Saving the "+name+" dataset to disk")
-        tokenized.save_to_disk(SAVED_DATA_PATH)
+    if not has_dataset_files:
+        print("Tokenized Datasets not detected locally")
+        tokenized_datasets = {}
+        for name, raw_dataset in {'train': train, 'valid':validate}.items():
+            print("Tokenizing the "+name+" dataset ")
+            curr_dataset = datasets.Dataset.from_pandas(raw_dataset)
 
-        tokenized_datasets[name] = tokenized.set_format(type="torch")
+            features = Features({
+                'input_ids': Sequence(feature=Value(dtype='int64')),
+                'attention_mask': Sequence(Value(dtype='int64')),
+            })
 
-    return tokenized_datasets['train'], tokenized_datasets['valid']
+            tokenized = curr_dataset.map(
+                tokenize_data,
+                remove_columns=curr_dataset.column_names,
+                features=features,
+            )
+            print("Saving the "+name+" dataset to disk")
+            tokenized.save_to_disk(SAVED_DATA_PATH+'/'+name)
+
+            tokenized_datasets[name] = tokenized
+
+        train = tokenized_datasets['train']
+        valid = tokenized_datasets['valid']
+    else:
+        print("Detected Tokenized Dataset, loading")
+        train = load_from_disk(dataset_paths['train'])
+        valid = load_from_disk(dataset_paths['valid'])
+    train.set_format(type="torch")
+    valid.set_format(type="torch")
+    return train, valid
 
 # This function now gets the `dict.txt` that comes with a model download and passes it into
 # fairseq-preprocess so that decoder dimensions match up with the model we're finetuning from

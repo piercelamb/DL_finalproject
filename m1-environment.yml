@@ -17,10 +17,10 @@ dependencies:
   - opencv
   - datasets
   - tqdm
+  - ipywidgets
   - tensorboardX
   - pip
   - pip: # This change was made because the moe_lm models were not in the latest release of fairseq, but rather the main branch
       - git+https://github.com/huggingface/transformers
-      - git+https://github.com/pytorch/fairseq.git
 variables: # for macOSX only
   CFLAGS: -stdlib=libc++ #https://github.com/pytorch/fairseq/#requirements-and-installation
