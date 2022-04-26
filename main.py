@@ -1,7 +1,7 @@
 import os
 
 from data_preprocessing import reduce_dataset, split_data, preprocess_data, DATA_BIN_DIR, Dataset, get_tokenized_data
-from transformers import AutoTokenizer, AutoModelForCausalLM, DataCollatorWithPadding, TrainingArguments, Trainer
+from transformers import AutoTokenizer, AutoModelForCausalLM, TextDataset, TrainingArguments, Trainer, DataCollatorForLanguageModeling
 from datasets import Dataset, load_dataset
 from models import get_model_list
 from torch.utils.data import DataLoader
@@ -15,24 +15,21 @@ SAVED_DATA_PATH = './data/'
 Train_csv = 'train_data.csv'
 Val_csv = 'val_data.csv'
 
+def load_dataset(train_path,test_path,tokenizer):
+    train_dataset = TextDataset(
+          tokenizer=tokenizer,
+          file_path=train_path,
+          block_size=128)
 
-class IMDbDataset(torch.utils.data.Dataset):
-    def __init__(self, encodings, labels):
-        self.encodings = encodings
-        self.labels = labels
+    test_dataset = TextDataset(
+          tokenizer=tokenizer,
+          file_path=test_path,
+          block_size=128)
 
-    def __getitem__(self, idx):
-        item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
-        a = self.labels.itmes()
-        item['label'] = torch.tensor(self.labels[idx])
-        return item
-
-    def __len__(self):
-        return len(self.labels)
-
-
-def preprocess_function(examples):
-    return tokenizer(examples["text"], truncation=True)
+    data_collator = DataCollatorForLanguageModeling(
+        tokenizer=tokenizer, mlm=False,
+    )
+    return train_dataset,test_dataset,data_collator
 
 
 if __name__ == '__main__':
@@ -47,57 +44,12 @@ if __name__ == '__main__':
     file_path, raw_data, eliminated_data = reduce_dataset()
     train_df, val_df = split_data(raw_data)
 
-    #train_tokenized, val_tokenized = get_tokenized_data(train_df, val_df)
-    #exit(1)
-    train_texts = train_texts.astype(str).values.tolist()
-    val_texts = val_texts.astype(str).values.tolist()
-    train_labels = train_labels.astype(str).values.tolist()
-    val_labels = val_labels.astype(str).values.tolist()
-    eliminated_data_text = eliminated_data['text'].astype(str).values.tolist()
-    eliminated_data_label = eliminated_data['label'].astype(str).values.tolist()
-
-    training_data = []
-    validation_data = []
-    testing__data = []
-
-    size_training = len(train_texts)
-    for i in range(0, size_training):
-        string = 'Question: ' + train_texts[i] + ' Answer: ' + train_labels[i]
-        training_data.append(string)
-
-    size_validation = len(train_labels)
-    for i in range(0, size_validation):
-        string = 'Question: ' + val_texts[i] + ' Answer: ' + val_labels[i]
-        validation_data.append(string)
-
-    size_eliminated = len(eliminated_data_text)
-    for i in range(0, size_eliminated):
-        string = 'Question: ' + eliminated_data_text[i] + ' Answer: ' + eliminated_data_label[i]
-        testing__data.append(string)
-
     tokenizer = AutoTokenizer.from_pretrained("gpt2")
     if tokenizer.pad_token is None:
         tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
+    train_dataset, test_dataset, data_collator = load_dataset(SAVED_DATA_PATH+Train_csv,SAVED_DATA_PATH+Val_csv, tokenizer)
 
-
-    print("1")
-    train_encodings = tokenizer(training_data, max_length=50, padding='max_length', truncation=True,
-                                return_tensors='pt')
-    print("2")
-    val_encodings = tokenizer(validation_data, max_length=50, padding='max_length', truncation=True, return_tensors='pt')
-    print("3")
-    val_label_encodings = tokenizer(testing__data, max_length=50, padding='max_length', truncation=True,
-                                    return_tensors='pt')
-
-    # TODO: Convert the encodings to a dataset....
-    '''
-    train_dataset = IMDbDataset(train_encodings, train_label_encoding)
-    val_dataset = IMDbDataset(val_encodings, val_label_encodings)
-    test_dataset = IMDbDataset(test_encodings, test_label_encoding)'''
-
-    from torch.utils.data import DataLoader
-    from transformers import DistilBertForSequenceClassification, AdamW
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
