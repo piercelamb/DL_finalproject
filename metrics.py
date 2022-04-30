@@ -6,7 +6,7 @@ import sys
 import os
 
 REMAINING_DATA_PATH = './data/raw_train.csv'
-ELIMINATED_DATA_PATH = './data/eliminated_data.csv'
+ELIMINATED_DATA_PATH = './data/eliminated_data.csv.csv'
 COUNTS_PATH = './counts'
 
 
@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
         # create reasoning table for dataset with all pairs x1, x2, y and save
         all_df = make_reasoning_table(all)
-        save_to_csv(all_df, 'all', mode)
+        # save_to_csv(all_df, 'all', mode)
 
         # create counts of all metrics in the set and save
         s_counter = get_counts(s)
@@ -87,7 +87,7 @@ if __name__ == '__main__':
         st_counter = get_counts(st)
         all_counter = get_counts(all_nums)
 
-        # save_to_csv(s_counter, 'single', mode)
-        # save_to_csv(p_counter, 'pairs', mode)
-        # save_to_csv(st_counter, 'single_target', mode)
-        save_to_csv(all_counter, 'all_nums', mode)
+        save_to_csv(s_counter, 'single', mode)
+        save_to_csv(p_counter, 'pairs', mode)
+        save_to_csv(st_counter, 'single_target', mode)
+        # save_to_csv(all_counter, 'all_nums', mode)
