@@ -5,7 +5,7 @@ import re
 import sys
 import os
 
-REMAINING_DATA_PATH = './data/raw_dataset.csv'
+REMAINING_DATA_PATH = './data/raw_train.csv'
 ELIMINATED_DATA_PATH = './data/eliminated_data.csv'
 COUNTS_PATH = './counts'
 
@@ -20,6 +20,7 @@ def get_tuples(df):
     pairs = []
     single_target = []
     all = []
+    all_nums = []
 
     for idx, row in numbers_df.iteritems():
         numbers_list = tuple(filter(r.match, row))
@@ -31,7 +32,11 @@ def get_tuples(df):
             single_target.append((numbers_list[0], target))
             all.append((numbers_list[0], numbers_list[1], target))
 
-    return singles, pairs, single_target, all
+            all_nums.append(numbers_list[0])
+            all_nums.append(numbers_list[1])
+            all_nums.append(target)
+
+    return singles, pairs, single_target, all, all_nums
 
 
 def make_reasoning_table(all):
@@ -70,7 +75,7 @@ if __name__ == '__main__':
     if data is None:
         print('Please specify data to get metrics from (train or test)')
     else:
-        s, p, st, all = get_tuples(data)
+        s, p, st, all, all_nums = get_tuples(data)
 
         # create reasoning table for dataset with all pairs x1, x2, y and save
         all_df = make_reasoning_table(all)
@@ -80,7 +85,9 @@ if __name__ == '__main__':
         s_counter = get_counts(s)
         p_counter = get_counts(p)
         st_counter = get_counts(st)
+        all_counter = get_counts(all_nums)
 
-        save_to_csv(s_counter, 'single', mode)
-        save_to_csv(p_counter, 'pairs', mode)
-        save_to_csv(st_counter, 'single_target', mode)
+        # save_to_csv(s_counter, 'single', mode)
+        # save_to_csv(p_counter, 'pairs', mode)
+        # save_to_csv(st_counter, 'single_target', mode)
+        save_to_csv(all_counter, 'all_nums', mode)
