@@ -5,7 +5,7 @@ import re
 import sys
 import os
 
-REMAINING_DATA_PATH = './data/raw_train.csv'
+REMAINING_DATA_PATH = './data/raw_dataset.csv'
 ELIMINATED_DATA_PATH = './data/eliminated_data.csv'
 COUNTS_PATH = './counts'
 
@@ -88,6 +88,6 @@ if __name__ == '__main__':
         all_counter = get_counts(all_nums)
 
         save_to_csv(s_counter, 'single', mode)
-        save_to_csv(p_counter, 'pairs', mode)
-        save_to_csv(st_counter, 'single_target', mode)
+        # save_to_csv(p_counter, 'pairs', mode)
+        # save_to_csv(st_counter, 'single_target', mode)
         # save_to_csv(all_counter, 'all_nums', mode)
