@@ -9,30 +9,40 @@ REMAINING_DATA_PATH = './data/raw_dataset.csv'
 ELIMINATED_DATA_PATH = './data/eliminated_data.csv'
 COUNTS_PATH = './counts'
 
+
 def get_tuples(df):
     find_numbers = '^[-+]?[0-9]+[.]?[0-9]*([eE][-+]?[0-9]+)?$'
     r = re.compile(find_numbers)
     remove_punctuation = df['Question'].str.replace('[?.]$', '')
     numbers_df = remove_punctuation.str.split()
 
-    single_freq = []
-    pair_freq = []
-    single_target_freq = []
+    singles = []
+    pairs = []
+    single_target = []
+    all = []
 
     for idx, row in numbers_df.iteritems():
         numbers_list = tuple(filter(r.match, row))
-        if len(numbers_list) > 1:
-            single_freq.append(numbers_list[0])
-            pair_freq.append(numbers_list)
-            single_target_freq.append((numbers_list[0], df['Answer'].iloc[idx]))
+        if len(numbers_list) == 2:
+            target = df['Answer'].iloc[idx]
 
-    return Counter(single_freq), Counter(pair_freq), Counter(single_target_freq)
+            singles.append((numbers_list[0]))
+            pairs.append(numbers_list)
+            single_target.append((numbers_list[0], target))
+            all.append((numbers_list[0], numbers_list[1], target))
+
+    return singles, pairs, single_target, all
 
 
-def get_data(t: str):
-    if t == 'test':
+def make_reasoning_table(all):
+    df = pd.DataFrame(all, columns=['x1', 'x2', 'y'])
+    return df
+
+
+def get_data(mode: str):
+    if mode == 'test':
         data = pd.read_csv(ELIMINATED_DATA_PATH, dtype={"Question": "string", "Answer": "string"})
-    elif t == 'train':
+    elif mode == 'train':
         data = pd.read_csv(REMAINING_DATA_PATH, dtype={"Question": "string", "Answer": "string"})
     else:
         return None
@@ -40,29 +50,37 @@ def get_data(t: str):
     return data
 
 
-def get_counts(counts):
+def get_counts(num_list):
+    counts = Counter(num_list)
     df = pd.DataFrame.from_dict(counts, orient='index').reset_index()
     df = df.rename(columns={'index': 'integer(s)', 0: 'counts'})
     df = df.sort_values(by=['counts'], ascending=False)
     return df
 
 
-def save_to_csv(df, t: str):
+def save_to_csv(df, t: str, mode: str):
     os.makedirs(COUNTS_PATH, exist_ok=True)
-    df.to_csv('counts/' + t + '_eliminated_counts.csv', index=False)
+    df.to_csv('counts/' + t + '_' + mode + '_counts.csv', index=False)
+
 
 if __name__ == '__main__':
-    data = get_data(str(sys.argv[1]))
+    mode = str(sys.argv[1])
+    data = get_data(mode)
 
     if data is None:
         print('Please specify data to get metrics from (train or test)')
     else:
-        s, p, st = get_tuples(data)
+        s, p, st, all = get_tuples(data)
 
+        # create reasoning table for dataset with all pairs x1, x2, y and save
+        all_df = make_reasoning_table(all)
+        save_to_csv(all_df, 'all', mode)
+
+        # create counts of all metrics in the set and save
         s_counter = get_counts(s)
         p_counter = get_counts(p)
         st_counter = get_counts(st)
 
-        save_to_csv(s_counter, 'single')
-        save_to_csv(p_counter, 'pairs')
-        save_to_csv(st_counter, 'single_target')
+        save_to_csv(s_counter, 'single', mode)
+        save_to_csv(p_counter, 'pairs', mode)
+        save_to_csv(st_counter, 'single_target', mode)
