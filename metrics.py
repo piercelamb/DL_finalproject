@@ -6,7 +6,7 @@ import sys
 import os
 
 REMAINING_DATA_PATH = './data/raw_train.csv'
-ELIMINATED_DATA_PATH = './data/eliminated_data.csv.csv'
+ELIMINATED_DATA_PATH = './data/eliminated_data.csv'
 COUNTS_PATH = './counts'
 
 
