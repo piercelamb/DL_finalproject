@@ -1,4 +1,5 @@
 import os
+import sys
 
 from data_preprocessing import reduce_dataset, split_data, preprocess_data, DATA_BIN_DIR, Dataset, get_tokenized_data
 from transformers import AutoTokenizer, AutoModelForCausalLM, TextDataset, TrainingArguments, Trainer, DataCollatorForLanguageModeling
@@ -6,7 +7,6 @@ from datasets import Dataset, load_dataset
 from models import get_model_list
 from torch.utils.data import DataLoader
 import torch
-import pandas as pd
 
 FAIRSEQ_MODEL_PATH = './models'
 CHECKPOINT_DIR = './checkpoint'
@@ -14,6 +14,7 @@ CHECKPOINT_DIR = './checkpoint'
 SAVED_DATA_PATH = './data/'
 Train_csv = 'train_data.csv'
 Val_csv = 'val_data.csv'
+
 
 def load_dataset(train_path,test_path,tokenizer):
     train_dataset = TextDataset(
@@ -30,6 +31,35 @@ def load_dataset(train_path,test_path,tokenizer):
         tokenizer=tokenizer, mlm=False,
     )
     return train_dataset,test_dataset,data_collator
+
+
+def train_model(train_dataset):
+    model.train()
+
+    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+
+    training_args = TrainingArguments(
+        output_dir='./results',  # output directory
+        num_train_epochs=3,  # total number of training epochs
+        per_device_train_batch_size=16,  # batch size per device during training
+        per_device_eval_batch_size=64,  # batch size for evaluation
+        warmup_steps=500,  # number of warmup steps for learning rate scheduler
+        weight_decay=0.01,  # strength of weight decay
+        logging_dir='./logs',  # directory for storing logs
+        logging_steps=10,
+    )
+    trainer = Trainer(
+        model=model,  # the instantiated 🤗 Transformers model to be trained
+        args=training_args,  # training arguments, defined above
+        train_dataset=train_dataset,  # training dataset
+        eval_dataset=val_dataset  # evaluation dataset3z
+    )
+
+    trainer.train()
+
+
+def evaluate_model():
+    return results
 
 
 if __name__ == '__main__':
@@ -55,28 +85,12 @@ if __name__ == '__main__':
 
     model = AutoModelForCausalLM.from_pretrained("KoboldAI/fairseq-dense-125M")
     model.to(device)
-    model.train()
 
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+    if sys.arg[1] == 'train':
+        train_model(train_dataset)
+    if sys.arg[1] == 'eval':
+        evaluate_model(test_dataset)
 
-    training_args = TrainingArguments(
-        output_dir='./results',  # output directory
-        num_train_epochs=3,  # total number of training epochs
-        per_device_train_batch_size=16,  # batch size per device during training
-        per_device_eval_batch_size=64,  # batch size for evaluation
-        warmup_steps=500,  # number of warmup steps for learning rate scheduler
-        weight_decay=0.01,  # strength of weight decay
-        logging_dir='./logs',  # directory for storing logs
-        logging_steps=10,
-    )
-    trainer = Trainer(
-        model=model,  # the instantiated 🤗 Transformers model to be trained
-        args=training_args,  # training arguments, defined above
-        train_dataset=train_dataset,  # training dataset
-        eval_dataset=val_dataset  # evaluation dataset3z
-    )
-
-    trainer.train()
 
     '''
     
