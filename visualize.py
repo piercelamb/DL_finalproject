@@ -35,3 +35,4 @@ if __name__ == '__main__':
 
     data = get_data(f)
     visualize_counts(data.head(35), t, f)
+    print('test')
