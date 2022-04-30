@@ -47,9 +47,9 @@ def get_counts(counts):
     return df
 
 
-def save_to_csv(df, path):
-    os.makedirs(path, exist_ok=True)
-    df.to_csv('counts/eliminated_counts.csv', index=False)
+def save_to_csv(df, t: str):
+    os.makedirs(COUNTS_PATH, exist_ok=True)
+    df.to_csv('counts/' + t + '_eliminated_counts.csv', index=False)
 
 if __name__ == '__main__':
     data = get_data(str(sys.argv[1]))
@@ -63,6 +63,6 @@ if __name__ == '__main__':
         p_counter = get_counts(p)
         st_counter = get_counts(st)
 
-        save_to_csv(s_counter, COUNTS_PATH)
-        save_to_csv(p_counter, COUNTS_PATH)
-        save_to_csv(st_counter, COUNTS_PATH)
+        save_to_csv(s_counter, 'single')
+        save_to_csv(p_counter, 'pairs')
+        save_to_csv(st_counter, 'single_target')
