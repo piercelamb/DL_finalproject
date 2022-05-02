@@ -63,6 +63,10 @@ logger = logging.getLogger(__name__)
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 
+# python main.py --model_name_or_path KoboldAI/fairseq-dense-125M
+# --train_file  train_data.csv --tokenizer_name gpt2
+# --per_device_train_batch_size 1 --do_train \
+# --output_dir /tmp/two --overwrite_output_dir
 
 @dataclass
 class ModelArguments:
